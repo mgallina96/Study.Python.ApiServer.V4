@@ -1,0 +1,63 @@
+services:
+  main-api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - main
+    ports:
+      - "9191:9191"
+    volumes:
+      - .:/app
+  shared-redis:
+    image: redis:7
+    networks:
+      - main
+      - test
+    ports:
+      - "6379:6379"
+    volumes:
+      - shared-redis-data:/data
+  main-postgres:
+    image: postgres:17
+    networks:
+      - main
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: api
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - main-postgres-data:/var/lib/postgresql/data
+  test-api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - test
+    ports:
+      - "29191:9191"
+    volumes:
+      - .:/app
+  test-postgres:
+    image: postgres:17
+    networks:
+      - test
+    ports:
+      - "25432:5432"
+    environment:
+      POSTGRES_DB: api
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - test-postgres-data:/var/lib/postgresql/data
+volumes:
+  main-postgres-data:
+  shared-redis-data:
+  test-postgres-data:
+networks:
+  main:
+  test:
