@@ -1,11 +1,5 @@
-def main():
-    try:
-        while True:
-            print("Hello, World!")
-            time.sleep(1)
-    except KeyboardInterrupt:
-        pass
+from system.settings import get_settings
 
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    settings = get_settings()
+    print(settings.model_dump())
