@@ -1,5 +1,4 @@
-import redis.asyncio as redis
-from fastapi import Depends
+from redis import asyncio as redis
 
 from system.settings.models import RedisSettings
 
@@ -29,8 +28,3 @@ class RedisConnection:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self._redis.aclose()
-
-
-async def get_redis_connection(settings: RedisSettings = Depends()) -> redis.Redis:
-    async with RedisConnection(settings) as redis_connection:
-        yield redis_connection

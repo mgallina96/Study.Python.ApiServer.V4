@@ -1,7 +1,12 @@
 from functools import lru_cache
 
-from system.redis import RedisConnection
-from system.settings.models import Settings, StartupSettings
+from system.redis.models import RedisConnection
+from system.settings.models import (
+    Settings,
+    StartupSettings,
+    RedisSettings,
+    LoggingSettings,
+)
 
 
 @lru_cache
@@ -24,12 +29,22 @@ async def get_settings() -> Settings:
 
     # noinspection PyArgumentList
     startup_settings = StartupSettings()
-    settings_prefix = f"settings:{startup_settings.instance_name}:"
+    settings_prefix = f"settings:{startup_settings.app_name}:"
 
-    async with RedisConnection(startup_settings.config_redis) as redis_connection:
+    async with RedisConnection(startup_settings.redis_startup) as redis_connection:
         _, keys = await redis_connection.scan(match=f"{settings_prefix}*")
         values = await redis_connection.mget(keys)
 
     settings_dict = unflatten_tree(keys, values, separator=":", prefix=settings_prefix)
     settings = Settings(**settings_dict)
     return settings
+
+
+@lru_cache
+async def get_redis_settings() -> RedisSettings:
+    return (await get_settings()).redis
+
+
+@lru_cache
+async def get_logging_settings() -> LoggingSettings:
+    return (await get_settings()).logging
