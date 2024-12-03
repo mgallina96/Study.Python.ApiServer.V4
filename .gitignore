@@ -1,5 +1,5 @@
 ### Project specific
-logs/*.log
+logs/*.log.*
 
 
 ### Python template

@@ -1,19 +1,15 @@
 from typing import Type, Tuple
 
-from pydantic import BaseModel, SecretStr, Json
+from pydantic import BaseModel, SecretStr
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
     PydanticBaseSettingsSource,
 )
 
-
-class RedisSettings(BaseModel):
-    host: str
-    port: int
-    db: int
-    username: str | None = None
-    password: SecretStr | None = None
+from system.datetime.settings import DatetimeSettings
+from system.logging.settings import LoggingSettings
+from system.redis.settings import RedisSettings
 
 
 class StartupSettings(BaseSettings):
@@ -44,24 +40,7 @@ class DatabaseSettings(BaseModel):
     pool_size: int
 
 
-class LoggingSinkSettings(BaseModel):
-    enabled: bool
-    format: str
-    root_level: str
-
-
-class LoggingSinkFileSettings(LoggingSinkSettings):
-    path: str
-    backup_count: int
-
-
-class LoggingSettings(BaseModel):
-    root_level: str
-    console: LoggingSinkSettings
-    file: LoggingSinkFileSettings
-    module_levels: Json[dict[str, str]]
-
-
 class Settings(StartupSettings):
     redis: RedisSettings
     logging: LoggingSettings
+    datetime: DatetimeSettings

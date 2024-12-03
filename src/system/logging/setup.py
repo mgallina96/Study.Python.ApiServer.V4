@@ -5,6 +5,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 from pythonjsonlogger import jsonlogger
 
+from system.logging.settings import LoggingFormatter
 from system.settings.dependencies import get_logging_settings
 
 
@@ -22,16 +23,22 @@ def _formatTime(  # pylint: disable=invalid-name
     )
 
 
-async def init_logging() -> None:
+async def init_logging() -> logging.Logger:
     settings = await get_logging_settings()
 
     logger = logging.getLogger()
     logger.setLevel(settings.root_level.upper())
 
-    json_formatter = jsonlogger.JsonFormatter(fmt=settings.logger__root__format)
+    json_formatter = jsonlogger.JsonFormatter(fmt=settings.format)
     json_formatter.formatTime = _formatTime
-    plain_formatter = logging.Formatter(fmt=settings.logger__root__format)
+
+    plain_formatter = logging.Formatter(fmt=settings.format)
     plain_formatter.formatTime = _formatTime
+
+    formatters = {
+        LoggingFormatter.JSON: json_formatter,
+        LoggingFormatter.PLAIN: plain_formatter,
+    }
 
     if settings.file.enabled:
         file_handler = TimedRotatingFileHandler(
@@ -39,13 +46,17 @@ async def init_logging() -> None:
             when="midnight",
             backupCount=settings.file.backup_count,
         )
-        file_handler.setFormatter(json_formatter)
+        formatter = formatters[settings.file.formatter]
+        file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
     if settings.console.enabled:
         console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(plain_formatter)
+        formatter = formatters[settings.console.formatter]
+        console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
     for module, level in settings.module_levels.items():
         logging.getLogger(module).setLevel(level.upper())
+
+    return logger

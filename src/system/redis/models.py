@@ -1,6 +1,6 @@
 from redis import asyncio as redis
 
-from system.settings.models import RedisSettings
+from system.redis.settings import RedisSettings
 
 
 class RedisConnection:

@@ -1,15 +1,21 @@
-from functools import lru_cache
+import redis
 
+from system.datetime.settings import DatetimeSettings
+from system.logging.settings import LoggingSettings
 from system.redis.models import RedisConnection
+from system.redis.settings import RedisSettings
 from system.settings.models import (
     Settings,
     StartupSettings,
-    RedisSettings,
-    LoggingSettings,
 )
 
+_settings: Settings | None = None
 
-@lru_cache
+
+class SettingsNotLoadedError(Exception):
+    pass
+
+
 async def get_settings() -> Settings:
     def unflatten_tree(
         _keys: list[bytes],
@@ -27,24 +33,40 @@ async def get_settings() -> Settings:
             current[parts[-1]] = value.decode()
         return tree
 
-    # noinspection PyArgumentList
-    startup_settings = StartupSettings()
-    settings_prefix = f"settings:{startup_settings.app_name}:"
+    global _settings
+    if _settings is None:
+        # noinspection PyArgumentList
+        startup_settings = StartupSettings()
+        settings_prefix = f"settings:{startup_settings.app_name}:"
 
-    async with RedisConnection(startup_settings.redis_startup) as redis_connection:
-        _, keys = await redis_connection.scan(match=f"{settings_prefix}*")
-        values = await redis_connection.mget(keys)
+        try:
+            async with RedisConnection(
+                startup_settings.redis_startup
+            ) as redis_connection:
+                _, keys = await redis_connection.scan(
+                    match=f"{settings_prefix}*", count=1_000
+                )
+                values = await redis_connection.mget(keys)
+        except redis.exceptions.ConnectionError as exc:
+            raise SettingsNotLoadedError(
+                "Could not connect to Redis for settings"
+            ) from exc
 
-    settings_dict = unflatten_tree(keys, values, separator=":", prefix=settings_prefix)
-    settings = Settings(**settings_dict)
-    return settings
+        settings_dict = unflatten_tree(
+            keys, values, separator=":", prefix=settings_prefix
+        )
+        _settings = Settings(**settings_dict)
+
+    return _settings
 
 
-@lru_cache
 async def get_redis_settings() -> RedisSettings:
     return (await get_settings()).redis
 
 
-@lru_cache
 async def get_logging_settings() -> LoggingSettings:
     return (await get_settings()).logging
+
+
+async def get_datetime_settings() -> DatetimeSettings:
+    return (await get_settings()).datetime
