@@ -1,9 +1,7 @@
 import redis
 
-from system.datetime.settings import DatetimeSettings
-from system.logging.settings import LoggingSettings
+from system.databases.settings import DatabaseSettings, DatabaseConnections
 from system.redis.models import RedisConnection
-from system.redis.settings import RedisSettings
 from system.settings.models import (
     Settings,
     StartupSettings,
@@ -12,11 +10,17 @@ from system.settings.models import (
 _settings: Settings | None = None
 
 
-class SettingsNotLoadedError(Exception):
+class SettingsLoadingError(Exception):
     pass
 
 
-async def get_settings() -> Settings:
+def get_settings() -> Settings:
+    if _settings is None:
+        raise SettingsLoadingError("Settings not loaded. Call init_settings first.")
+    return _settings
+
+
+async def init_settings() -> Settings:
     def unflatten_tree(
         _keys: list[bytes],
         _values: list[bytes],
@@ -48,7 +52,7 @@ async def get_settings() -> Settings:
                 )
                 values = await redis_connection.mget(keys)
         except redis.exceptions.ConnectionError as exc:
-            raise SettingsNotLoadedError(
+            raise SettingsLoadingError(
                 "Could not connect to Redis for settings"
             ) from exc
 
@@ -60,13 +64,6 @@ async def get_settings() -> Settings:
     return _settings
 
 
-async def get_redis_settings() -> RedisSettings:
-    return (await get_settings()).redis
-
-
-async def get_logging_settings() -> LoggingSettings:
-    return (await get_settings()).logging
-
-
-async def get_datetime_settings() -> DatetimeSettings:
-    return (await get_settings()).datetime
+async def get_database_settings(key: DatabaseConnections) -> DatabaseSettings:
+    settings = get_settings()
+    return getattr(settings.databases, key.value)

@@ -3,20 +3,22 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.routes import api_router
+from system.databases.connections import init_database_engines
+from system.id_obfuscation.dependencies import init_id_obfuscation
 from system.logging.setup import init_logging
-from system.settings.dependencies import get_settings
+from system.settings.dependencies import init_settings
 
 
 @asynccontextmanager
 async def lifespan(_fastapi_app: FastAPI):
+    settings = await init_settings()
     logger = await init_logging()
-    settings = await get_settings()
-    logger.info(f"Starting {settings.app_name}")
-    logger.debug(f"Settings: {settings.model_dump()}")
+    init_id_obfuscation(settings)
+    init_database_engines(settings)
 
-    logger.info(f"{settings.app_name} started")
+    logger.info("Starting %s", settings.app_name)
     yield
-    logger.info(f"{settings.app_name} stopped")
+    logger.info("Stopping %s", settings.app_name)
 
 
 fastapi_app = FastAPI(

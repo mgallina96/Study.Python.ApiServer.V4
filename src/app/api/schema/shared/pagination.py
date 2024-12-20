@@ -1,16 +1,4 @@
-from typing import Generic
-
 from pydantic import Field, AliasChoices, create_model, BaseModel, AliasPath
-
-from app.api.schema.shared.base import ResponseSchema, DataSchemaT, BaseSchema
-
-
-class PaginatedResponseMetaSchema(BaseSchema):
-    count: int
-
-
-class PaginatedResponseSchema(ResponseSchema[DataSchemaT], Generic[DataSchemaT]):
-    meta: PaginatedResponseMetaSchema
 
 
 class PaginationParams(BaseModel):

@@ -4,7 +4,7 @@ import pytz
 from fastapi import Depends
 
 from system.datetime.settings import DatetimeSettings
-from system.settings.dependencies import get_datetime_settings
+from system.datetime.dependencies import get_datetime_settings
 
 
 class DatetimeProvider:

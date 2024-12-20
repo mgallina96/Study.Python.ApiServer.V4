@@ -1,5 +1,3 @@
-from typing import Generic, TypeVar
-
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
@@ -12,8 +10,5 @@ class BaseSchema(BaseModel):
     )
 
 
-DataSchemaT = TypeVar("DataSchemaT", bound=BaseSchema)
-
-
-class ResponseSchema(BaseSchema, Generic[DataSchemaT]):
-    data: DataSchemaT
+class CountMeta(BaseSchema):
+    count: int

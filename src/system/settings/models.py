@@ -1,13 +1,15 @@
 from typing import Type, Tuple
 
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
     PydanticBaseSettingsSource,
 )
 
+from system.databases.settings import DatabaseSettings
 from system.datetime.settings import DatetimeSettings
+from system.id_obfuscation.sqids import SqidsObfuscationSettings
 from system.logging.settings import LoggingSettings
 from system.redis.settings import RedisSettings
 
@@ -33,14 +35,13 @@ class StartupSettings(BaseSettings):
     redis_startup: RedisSettings
 
 
-class DatabaseSettings(BaseModel):
-    sync_connection_string: str
-    async_connection_string: str
-    password: SecretStr
-    pool_size: int
+class Databases(BaseModel):
+    main_postgres: DatabaseSettings
 
 
 class Settings(StartupSettings):
     redis: RedisSettings
     logging: LoggingSettings
     datetime: DatetimeSettings
+    databases: Databases
+    sqids: SqidsObfuscationSettings

@@ -6,7 +6,7 @@ from logging.handlers import TimedRotatingFileHandler
 from pythonjsonlogger import jsonlogger
 
 from system.logging.settings import LoggingFormatter
-from system.settings.dependencies import get_logging_settings
+from system.logging.dependencies import get_logging_settings
 
 
 # noinspection PyPep8Naming,PyUnusedLocal
@@ -59,4 +59,5 @@ async def init_logging() -> logging.Logger:
     for module, level in settings.module_levels.items():
         logging.getLogger(module).setLevel(level.upper())
 
+    logger.info("Logging initialized")
     return logger
