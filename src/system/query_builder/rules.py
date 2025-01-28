@@ -6,9 +6,6 @@ from pydantic import BaseModel, Field as PydanticField, Tag, Discriminator
 from sqlmodel import bindparam, func, and_, or_, not_
 
 
-# TODO: Add unit tests for repr methods
-
-
 class Field:
     name: str
     database_column: Any
@@ -40,7 +37,7 @@ class QueryBuilderSyntaxError(Exception):
     pass
 
 
-class _EngineContext:
+class EngineContext:
     params: dict
     param_counters: dict[str, int]
     fields: dict[str, Field]
@@ -60,7 +57,7 @@ class _EngineContext:
 
 class _IRule(BaseModel, ABC):
     @abstractmethod
-    def compile(self, engine_context: _EngineContext) -> Any:
+    def compile(self, engine_context: EngineContext) -> Any:
         raise NotImplementedError()
 
 
@@ -76,12 +73,12 @@ class _BaseOrderByRule(_IRule):
     @abstractmethod
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
     ):
         raise NotImplementedError()
 
-    def compile(self, engine_context: _EngineContext) -> Any:
+    def compile(self, engine_context: EngineContext) -> Any:
         field = engine_context.fields[self.field]
         return self.apply(engine_context, field)
 
@@ -91,7 +88,7 @@ class Asc(_BaseOrderByRule):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
     ):
         return field.database_column
@@ -102,7 +99,7 @@ class Desc(_BaseOrderByRule):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
     ):
         return field.database_column.desc()
@@ -168,13 +165,13 @@ class _BaseSimpleWhereRule(_IRule):
     @abstractmethod
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
         raise NotImplementedError()
 
-    def compile(self, engine_context: _EngineContext) -> Any:
+    def compile(self, engine_context: EngineContext) -> Any:
         field = engine_context.fields[self.field]
         transformed_value = field.transform(self.value)
         return self.apply(engine_context, field, transformed_value)
@@ -189,7 +186,7 @@ class Equal(_BaseSimpleWhereRule):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -203,7 +200,7 @@ class IEqual(Equal):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -218,7 +215,7 @@ class Like(_BaseSimpleWhereRule):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -232,7 +229,7 @@ class ILike(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -246,7 +243,7 @@ class NotEqual(Equal):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -260,7 +257,7 @@ class INotEquals(Equal):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -274,7 +271,7 @@ class Contains(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -288,7 +285,7 @@ class IContains(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -303,7 +300,7 @@ class In(_BaseSimpleWhereRule):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -315,7 +312,7 @@ class NotIn(In):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -327,7 +324,7 @@ class GreaterThan(Equal):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -339,7 +336,7 @@ class GreaterThanOrEqual(Equal):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -353,7 +350,7 @@ class LessThan(Equal):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -365,7 +362,7 @@ class LessThanOrEqual(Equal):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -380,7 +377,7 @@ class IsNull(_BaseSimpleWhereRule):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -392,7 +389,7 @@ class IsNotNull(IsNull):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -404,7 +401,7 @@ class IsEmpty(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -416,7 +413,7 @@ class IsNotEmpty(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -428,7 +425,7 @@ class StartsWith(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -442,7 +439,7 @@ class IStartsWith(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -456,7 +453,7 @@ class EndsWith(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -470,7 +467,7 @@ class IEndsWith(Like):
 
     def apply(
         self,
-        engine_context: _EngineContext,
+        engine_context: EngineContext,
         field: Field,
         value: Any,
     ):
@@ -543,7 +540,7 @@ class _BaseComplexWhereRule(_IRule):
     def join(self, compiled_rules: list):
         raise NotImplementedError()
 
-    def compile(self, engine_context: _EngineContext) -> Any:
+    def compile(self, engine_context: EngineContext) -> Any:
         compiled_rules = [rule.compile(engine_context) for rule in self.rules]
         return self.join(compiled_rules)
 

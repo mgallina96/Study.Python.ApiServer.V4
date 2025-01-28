@@ -3,10 +3,8 @@ import logging
 import sys
 from logging.handlers import TimedRotatingFileHandler
 
-from pythonjsonlogger import jsonlogger
-
 from system.logging.settings import LoggingFormatter
-from system.logging.dependencies import get_logging_settings
+from system.settings import get_logging_settings
 
 
 # noinspection PyPep8Naming,PyUnusedLocal
@@ -23,20 +21,16 @@ def _formatTime(  # pylint: disable=invalid-name
     )
 
 
-async def init_logging() -> logging.Logger:
-    settings = await get_logging_settings()
+def init_logging() -> logging.Logger:
+    settings = get_logging_settings()
 
     logger = logging.getLogger()
     logger.setLevel(settings.root_level.upper())
-
-    json_formatter = jsonlogger.JsonFormatter(fmt=settings.format)
-    json_formatter.formatTime = _formatTime
 
     plain_formatter = logging.Formatter(fmt=settings.format)
     plain_formatter.formatTime = _formatTime
 
     formatters = {
-        LoggingFormatter.JSON: json_formatter,
         LoggingFormatter.PLAIN: plain_formatter,
     }
 

@@ -1,8 +1,10 @@
+from uuid import UUID
+
 from sqlmodel import SQLModel, Field
 
 
 class BaseTable(SQLModel):
-    id: int | None = Field(default=None, primary_key=True)
+    id: UUID = Field(primary_key=True)
 
     class Config:
         from_attributes = True

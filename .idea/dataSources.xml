@@ -8,7 +8,7 @@
       <jdbc-url>jdbc:redis://localhost:16379/0</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="main-postgres@localhost" uuid="e6027771-d2f6-4d8f-b02f-6ed02b6d8c36">
+    <data-source source="LOCAL" name="main@localhost" uuid="e6027771-d2f6-4d8f-b02f-6ed02b6d8c36">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>

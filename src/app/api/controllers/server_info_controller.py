@@ -2,9 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.schema.server_info_schema import GetServerInfoResponse, ServerInfoResponse
 from system.datetime.datetime_provider import DatetimeProvider
-from system.settings.dependencies import get_settings
-from system.settings.models import Settings
-from system.version import APP_VERSION
+from system.settings import get_settings, Settings
 
 server_info_router = APIRouter(prefix="/server-info")
 
@@ -16,14 +14,15 @@ async def get_server_info(
 ) -> GetServerInfoResponse:
     # Parse
     # Fetch / Process
-    app_version = APP_VERSION
+    app_version = settings.app_version
+    app_name = settings.app_name
     current_datetime = await datetime_provider.now_tz()
 
     # Format
     return GetServerInfoResponse(
         data=ServerInfoResponse(
             app_version=app_version,
+            app_name=app_name,
             current_datetime=current_datetime.isoformat(),
-            app_settings=settings,
         )
     )

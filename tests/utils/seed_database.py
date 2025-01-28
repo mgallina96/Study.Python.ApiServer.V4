@@ -1,37 +1,38 @@
 import asyncio
 
 from faker import Faker
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import Session
+from uuid6 import uuid7
 
-from app.core.models.main_postgres.customer import Customer
-from system.databases.connections import get_database_engine
-from system.databases.settings import DatabaseConnections
+from app.core.models.main.customer import Customer
+from system.database.session import database_engines
+from system.database.settings import DatabaseId
 from system.logging.setup import init_logging
 
 
 async def seed_customers(count: int) -> None:
-    logger = await init_logging()
+    logger = init_logging()
 
-    engine = await get_database_engine(DatabaseConnections.MAIN_POSTGRES)
-    async with AsyncSession(engine) as database_session:
-        Faker.seed(0)
+    engine = database_engines[DatabaseId.MAIN]
+    with Session(engine) as database_session:
         fake = Faker()
 
-        emails = set()
         for i in range(count):
-            while (email := fake.email()) in emails:
-                pass
-            emails.add(email)
+            customer_id = uuid7()
             customer = Customer(
+                id=customer_id,
                 name=fake.name(),
-                email=email,
+                email=f"{customer_id}@{fake.free_email_domain()}",
                 phone=fake.phone_number(),
                 address=fake.address(),
             )
             database_session.add(customer)
             logger.info(f"Seeded customer {i + 1}/{count}: {customer}")
-        await database_session.commit()
+        database_session.commit()
 
 
 if __name__ == "__main__":
-    asyncio.run(seed_customers(100_000))
+    total_count = 10_000
+    batch_size = 10_000
+    for _ in range(total_count // batch_size):
+        asyncio.run(seed_customers(batch_size))

@@ -5,7 +5,6 @@ from pydantic import BaseModel, Json
 
 class LoggingFormatter(Enum):
     PLAIN = "PLAIN"
-    JSON = "JSON"
 
 
 class LoggingSinkSettings(BaseModel):

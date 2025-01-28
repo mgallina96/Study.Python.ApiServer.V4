@@ -20,7 +20,7 @@ def upgrade() -> None:
         """
         CREATE TABLE main.customer
         (
-            id      integer GENERATED ALWAYS AS IDENTITY
+            id      uuid NOT NULL
                 CONSTRAINT customer_pk
                     PRIMARY KEY,
             name    varchar NOT NULL,

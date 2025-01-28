@@ -1,26 +1,12 @@
-from pydantic import field_serializer
-
-from app.api.schema.shared.base import CountMeta, BaseSchema
-from system.id_obfuscation.dependencies import get_id_obfuscator_factory
+from app.api.schema.shared.base import CountMeta, BaseSchema, BaseEntitySchema
 from system.query_builder.rules import WhereRule, OrderByRule
 
 
-class CustomerSchema(BaseSchema):
-    id: int
+class CustomerSchema(BaseEntitySchema):
     name: str
     email: str
     phone: str
     address: str
-
-    @field_serializer("id")
-    def obfuscate_id(self, value: int) -> str | None:
-        if value is None:
-            return None
-        return (
-            get_id_obfuscator_factory()
-            .get_obfuscator(self.__class__.__name__)
-            .encode(value)
-        )
 
 
 class GetAllCustomersResponse(BaseSchema):
