@@ -3,11 +3,11 @@ from sqlalchemy import func
 from sqlmodel import select, Session
 
 from app.api.schema.customer_schema import CustomerSchema, GetAllCustomersResponse
+from app.api.schema.shared.base import CountMeta
 from app.api.schema.shared.filtering import FilteringParams, get_filtering
 from app.api.schema.shared.pagination import PaginationParams, get_pagination
 from app.api.schema.shared.sorting import get_sorting, SortingParams
 from app.core.models.main.customer import Customer
-from app.core.repositories.customer_repository import CustomerRepository
 from system.database.session import DatabaseSession
 from system.database.settings import DatabaseId
 
@@ -17,27 +17,24 @@ customer_router = APIRouter(prefix="/customers")
 @customer_router.get("")
 async def get_all(
     main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
-    customer_repository: CustomerRepository = Depends(),
     filtering: FilteringParams = Depends(get_filtering),
     sorting: SortingParams = Depends(get_sorting),
     pagination: PaginationParams = Depends(get_pagination(100, 300)),
 ) -> GetAllCustomersResponse:
-    data_query = customer_repository.build_query(
+    data_query = CustomerSchema.build_query(
         select(Customer),
         pagination.skip,
         pagination.limit,
         filtering.where,
         sorting.order_by,
     )
-    data_result = main_database_session.exec(data_query)
-    data = data_result.all()
+    data = main_database_session.exec(data_query).all()
 
-    count_query = customer_repository.build_query(
+    count_query = CustomerSchema.build_query(
         select(func.count(Customer.id)),
         where=filtering.where,
     )
-    count_result = main_database_session.exec(count_query)
-    count = count_result.one()
+    count = main_database_session.exec(count_query).one()
 
     return GetAllCustomersResponse(
         data=[
@@ -50,11 +47,7 @@ async def get_all(
             )
             for d in data
         ],
-        meta=GetAllCustomersResponse.Meta(
+        meta=CountMeta(
             count=count,
-            skip=pagination.skip,
-            limit=pagination.limit,
-            where=filtering.where,
-            order_by=sorting.order_by,
         ),
     )

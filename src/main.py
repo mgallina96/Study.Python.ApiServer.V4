@@ -12,6 +12,7 @@ async def lifespan(_fastapi_app: FastAPI):
     settings = get_settings()
     logger = init_logging()
 
+    logger.debug("Settings: %s", settings.model_dump_json(indent=2))
     logger.info("Starting %s", settings.app_name)
     yield
     logger.info("Stopping %s", settings.app_name)

@@ -40,12 +40,14 @@ def init_logging() -> logging.Logger:
             when="midnight",
             backupCount=settings.file.backup_count,
         )
+        file_handler.setLevel(settings.file.root_level.upper())
         formatter = formatters[settings.file.formatter]
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
     if settings.console.enabled:
         console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(settings.console.root_level.upper())
         formatter = formatters[settings.console.formatter]
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)

@@ -1,5 +1,6 @@
 from app.api.schema.shared.base import CountMeta, BaseSchema, BaseEntitySchema
-from system.query_builder.rules import WhereRule, OrderByRule
+from app.core.models.main.customer import Customer
+from system.query_builder.rules import Field
 
 
 class CustomerSchema(BaseEntitySchema):
@@ -8,13 +9,14 @@ class CustomerSchema(BaseEntitySchema):
     phone: str
     address: str
 
+    @staticmethod
+    def get_query_builder_fields() -> list[Field]:
+        return [
+            Field("id", Customer.id),
+            Field("email", Customer.email),
+        ]
+
 
 class GetAllCustomersResponse(BaseSchema):
-    class Meta(CountMeta):
-        skip: int
-        limit: int
-        where: WhereRule | None
-        order_by: list[OrderByRule] | None
-
     data: list[CustomerSchema]
-    meta: Meta
+    meta: CountMeta

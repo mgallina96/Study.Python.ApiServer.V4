@@ -15,6 +15,9 @@ database_engines[DatabaseId.MAIN] = create_engine(
         password=main_database_settings.password.get_secret_value()
     ),
     pool_size=main_database_settings.pool_size,
+    pool_pre_ping=True,
+    echo=True,
+    echo_pool=True,
 )
 
 
