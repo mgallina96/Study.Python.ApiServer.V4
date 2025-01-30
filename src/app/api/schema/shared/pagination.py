@@ -34,6 +34,12 @@ def _build_limit_field(
 def get_pagination(
     default_limit: int | None = 50, max_limit: int | None = 200
 ) -> type[BaseModel]:
+    """
+    Create a new Pydantic model for validating pagination parameters with the specified default and maximum limits.
+    :param default_limit:
+    :param max_limit:
+    :return:
+    """
     global _pagination_models_cache
 
     key = f"{default_limit}-{max_limit}"

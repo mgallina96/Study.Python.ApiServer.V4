@@ -1,6 +1,6 @@
 from app.api.schema.shared.base import CountMeta, BaseSchema, BaseEntitySchema
 from app.core.models.main.customer import Customer
-from system.query_builder.rules import Field
+from system.query_builder import Field
 
 
 class CustomerSchema(BaseEntitySchema):

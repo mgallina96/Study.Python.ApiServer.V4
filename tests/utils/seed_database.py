@@ -5,7 +5,7 @@ from sqlmodel import Session
 from uuid6 import uuid7
 
 from app.core.models.main.customer import Customer
-from system.database.session import database_engines
+from system.database.session import get_database_engine
 from system.database.settings import DatabaseId
 from system.logging.setup import init_logging
 
@@ -13,7 +13,7 @@ from system.logging.setup import init_logging
 async def seed_customers(count: int) -> None:
     logger = init_logging()
 
-    engine = database_engines[DatabaseId.MAIN]
+    engine = get_database_engine(DatabaseId.MAIN)
     with Session(engine) as database_session:
         fake = Faker()
 

@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Query
 from pydantic import BaseModel, Field, AliasChoices, Json
 
-from system.query_builder.rules import (
+from system.query_builder import (
     WhereRule,
 )
 

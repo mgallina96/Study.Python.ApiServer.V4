@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 from sqlalchemy import Select
 
-from system.query_builder.rules import Field, WhereRule, OrderByRule, EngineContext
+from system.query_builder import Field, WhereRule, OrderByRule, EngineContext
 
 
 class BaseSchema(BaseModel):

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, Json
+from pydantic import BaseModel
 
 
 class LoggingFormatter(Enum):
@@ -23,4 +23,4 @@ class LoggingSettings(BaseModel):
     format: str
     console: LoggingSinkSettings
     file: LoggingSinkFileSettings
-    module_levels: Json[dict[str, str]]
+    module_levels: dict[str, str]

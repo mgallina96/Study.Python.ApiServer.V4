@@ -3,12 +3,17 @@ from enum import Enum
 from pydantic import BaseModel, SecretStr
 
 
-class DatabaseId(Enum):
+class DatabaseId(str, Enum):
     MAIN = "MAIN"
 
 
 class DatabaseSettings(BaseModel):
     id: DatabaseId
-    connection_string: str
-    password: SecretStr
+    drivername: str
+    username: str | None
+    password: SecretStr | None
+    host: str | None
+    port: int | None
+    database: str | None
     pool_size: int
+    query: dict
