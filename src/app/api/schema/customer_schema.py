@@ -20,3 +20,7 @@ class CustomerSchema(BaseEntitySchema):
 class GetAllCustomersResponse(BaseSchema):
     data: list[CustomerSchema]
     meta: CountMeta
+
+
+class GetCustomerResponse(BaseSchema):
+    data: CustomerSchema

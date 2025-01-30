@@ -27,8 +27,6 @@ _database_engines: dict[DatabaseId, Engine] = {
         logging_name=DatabaseId.MAIN,
         pool_size=_main_database_settings.pool_size,
         pool_pre_ping=True,
-        echo=True,
-        echo_pool=True,
     ),
 }
 
