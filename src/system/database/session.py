@@ -44,7 +44,12 @@ class DatabaseSession:
     def __call__(self) -> Session:
         engine = _database_engines[self.database_id]
         with Session(engine) as database_session:
-            yield database_session
+            try:
+                yield database_session
+                database_session.commit()
+            except Exception as e:
+                database_session.rollback()
+                raise e
 
     @staticmethod
     def get(database_id: DatabaseId) -> Session:

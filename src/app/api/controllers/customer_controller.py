@@ -1,13 +1,14 @@
 from logging import Logger
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import func
+from sqlalchemy import func, Select
 from sqlmodel import select, Session
 
 from app.api.schema.customer_schema import (
     CustomerSchema,
     GetAllCustomersResponse,
     GetCustomerResponse,
+    CreateCustomerRequest,
 )
 from app.api.schema.shared.base import CountMeta
 from app.api.schema.shared.errors import ApiError
@@ -89,6 +90,42 @@ async def get(
             message="Customer not found",
             detail=f"Customer not found with id: {customer_id}",
         )
+
+    return GetCustomerResponse(
+        data=CustomerSchema(
+            id=data.id,
+            name=data.name,
+            email=data.email,
+            phone=data.phone,
+            address=data.address,
+        )
+    )
+
+
+@customer_router.post("", status_code=status.HTTP_201_CREATED)
+async def create(
+    body: CreateCustomerRequest,
+    logger: Logger = Depends(get_request_logger),
+    main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
+) -> GetCustomerResponse:
+    logger.debug(RequestLog(input={"body": body}))
+
+    data_query: Select = select(Customer).where(Customer.email == body.email)
+    data = main_database_session.exec(data_query).first()
+    if data:
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            message="Customer already exists",
+            detail=f"Customer already exists with email: {body.email}",
+        )
+
+    data = Customer(
+        name=body.name,
+        email=body.email,
+        phone=body.phone,
+        address=body.address,
+    )
+    main_database_session.add(data)
 
     return GetCustomerResponse(
         data=CustomerSchema(

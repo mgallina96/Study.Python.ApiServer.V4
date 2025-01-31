@@ -15,6 +15,7 @@ class CustomerSchema(BaseEntitySchema):
         return [
             Field("id", Customer.id),
             Field("email", Customer.email),
+            Field("name", Customer.name),
         ]
 
 
@@ -25,3 +26,16 @@ class GetAllCustomersResponse(BaseSchema):
 
 class GetCustomerResponse(BaseSchema):
     data: CustomerSchema
+
+
+class CreateCustomerRequest(BaseSchema):
+    name: str
+    email: str
+    phone: str
+    address: str
+
+
+class UpdateCustomerRequest(BaseSchema):
+    name: str
+    phone: str
+    address: str
