@@ -5,7 +5,7 @@ from freezegun import freeze_time
 from system.settings import Settings
 
 
-class TestGetServerInfo:
+class TestGet:
     ENDPOINT = "/api/v4/server-info"
 
     def test_ok(self, client: TestClient, settings: Settings):

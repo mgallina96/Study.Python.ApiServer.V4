@@ -1,6 +1,6 @@
 from logging import Logger
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import func
 from sqlmodel import select, Session
 
@@ -10,6 +10,7 @@ from app.api.schema.customer_schema import (
     GetCustomerResponse,
 )
 from app.api.schema.shared.base import CountMeta
+from app.api.schema.shared.errors import ApiError
 from app.api.schema.shared.filtering import FilteringParams, get_filtering
 from app.api.schema.shared.pagination import PaginationParams, get_pagination
 from app.api.schema.shared.sorting import get_sorting, SortingParams
@@ -83,7 +84,11 @@ async def get(
 
     data = main_database_session.get(Customer, customer_id)
     if not data:
-        raise HTTPException(status_code=404, detail="Customer not found")
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            message="Customer not found",
+            detail=f"Customer not found with id: {customer_id}",
+        )
 
     return GetCustomerResponse(
         data=CustomerSchema(

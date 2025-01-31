@@ -8,7 +8,7 @@ server_info_router = APIRouter(prefix="/server-info")
 
 
 @server_info_router.get("")
-async def get_server_info(
+async def get(
     settings: Settings = Depends(get_settings),
     datetime_provider: DatetimeProvider = Depends(),
 ) -> GetServerInfoResponse:

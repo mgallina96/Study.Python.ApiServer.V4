@@ -45,3 +45,8 @@ class DatabaseSession:
         engine = _database_engines[self.database_id]
         with Session(engine) as database_session:
             yield database_session
+
+    @staticmethod
+    def get(database_id: DatabaseId) -> Session:
+        engine = _database_engines[database_id]
+        return Session(engine)
