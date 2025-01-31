@@ -37,6 +37,11 @@ class QueryBuilderSyntaxError(Exception):
     pass
 
 
+class QueryBuilderUnknownFieldError(QueryBuilderSyntaxError):
+    def __init__(self, field_name: str):
+        super().__init__(f"Unknown query builder field: {field_name}")
+
+
 class EngineContext:
     params: dict
     param_counters: dict[str, int]
@@ -79,7 +84,10 @@ class _BaseOrderByRule(_IRule):
         raise NotImplementedError()
 
     def compile(self, engine_context: EngineContext) -> Any:
-        field = engine_context.fields[self.field]
+        try:
+            field = engine_context.fields[self.field]
+        except KeyError as e:
+            raise QueryBuilderUnknownFieldError(self.field) from e
         return self.apply(engine_context, field)
 
 
@@ -172,7 +180,10 @@ class _BaseSimpleWhereRule(_IRule):
         raise NotImplementedError()
 
     def compile(self, engine_context: EngineContext) -> Any:
-        field = engine_context.fields[self.field]
+        try:
+            field = engine_context.fields[self.field]
+        except KeyError as e:
+            raise QueryBuilderUnknownFieldError(self.field) from e
         transformed_value = field.transform(self.value)
         return self.apply(engine_context, field, transformed_value)
 

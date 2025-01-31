@@ -1,4 +1,5 @@
-from app.api.schema.shared.base import CountMeta, BaseSchema, BaseEntitySchema
+from app.api.schema.shared.base import CountMeta, BaseSchema
+from app.api.schema.shared.entities import BaseEntitySchema
 from app.core.models.main.customer import Customer
 from system.query_builder import Field
 

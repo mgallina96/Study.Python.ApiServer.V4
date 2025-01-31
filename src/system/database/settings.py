@@ -8,7 +8,6 @@ class DatabaseId(str, Enum):
 
 
 class DatabaseSettings(BaseModel):
-    id: DatabaseId
     drivername: str
     username: str | None
     password: SecretStr | None

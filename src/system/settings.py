@@ -36,12 +36,15 @@ class Settings(BaseSettings):
         env_nested_delimiter="__",
     )
 
+    @property
+    def app_version(self) -> str:
+        return "0.1.0"
+
     app_name: str
-    app_version: str = "0.1.0"
     redis: RedisSettings
     logging: LoggingSettings
     datetime: DatetimeSettings
-    databases: list[DatabaseSettings]
+    databases: dict[DatabaseId, DatabaseSettings]
 
 
 @lru_cache
@@ -52,23 +55,19 @@ def get_settings() -> Settings:
 
 @lru_cache
 def get_redis_settings() -> RedisSettings:
-    return (get_settings()).redis
+    return get_settings().redis
 
 
 @lru_cache
 def get_datetime_settings() -> DatetimeSettings:
-    return (get_settings()).datetime
+    return get_settings().datetime
 
 
 @lru_cache
 def get_database_settings(database_id: DatabaseId) -> DatabaseSettings:
-    settings = get_settings()
-    database_settings = settings.databases
-    for db in database_settings:
-        if db.id == database_id:
-            return db
+    return get_settings().databases[database_id]
 
 
 @lru_cache
 def get_logging_settings() -> LoggingSettings:
-    return (get_settings()).logging
+    return get_settings().logging

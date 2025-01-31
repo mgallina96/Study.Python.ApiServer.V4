@@ -39,20 +39,22 @@ async def get_all(
         )
     )
 
-    data_query = CustomerSchema.build_query(
-        select(Customer),
-        pagination.skip,
-        pagination.limit,
-        filtering.where,
-        sorting.order_by,
-    )
-    data = main_database_session.exec(data_query).all()
+    data = main_database_session.exec(
+        CustomerSchema.build_query(
+            select(Customer),
+            pagination.skip,
+            pagination.limit,
+            filtering.where,
+            sorting.order_by,
+        )
+    ).all()
 
-    count_query = CustomerSchema.build_query(
-        select(func.count(Customer.id)),
-        where=filtering.where,
-    )
-    count = main_database_session.exec(count_query).one()
+    count = main_database_session.exec(
+        CustomerSchema.build_query(
+            select(func.count(Customer.id)),
+            where=filtering.where,
+        )
+    ).one()
 
     return GetAllCustomersResponse(
         data=[
