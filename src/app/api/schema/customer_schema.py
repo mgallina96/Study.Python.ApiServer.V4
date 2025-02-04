@@ -33,9 +33,3 @@ class CreateCustomerRequest(BaseSchema):
     email: str
     phone: str
     address: str
-
-
-class UpdateCustomerRequest(BaseSchema):
-    name: str
-    phone: str
-    address: str

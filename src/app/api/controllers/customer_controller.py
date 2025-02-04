@@ -136,3 +136,76 @@ async def create(
             address=data.address,
         )
     )
+
+
+@customer_router.put("/{customer_id}")
+async def update(
+    customer_id: str,
+    body: CreateCustomerRequest,
+    logger: Logger = Depends(get_request_logger),
+    main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
+) -> GetCustomerResponse:
+    logger.debug(RequestLog(input={"customer_id": customer_id, "body": body}))
+
+    data_query: Select = select(Customer).where(
+        Customer.id != customer_id, Customer.email == body.email
+    )
+    data = main_database_session.exec(data_query).first()
+    if data:
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            message="Customer already exists",
+            detail=f"Customer already exists with email: {body.email}",
+        )
+
+    data = main_database_session.get(Customer, customer_id)
+    if not data:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            message="Customer not found",
+            detail=f"Customer not found with id: {customer_id}",
+        )
+
+    data.name = body.name
+    data.email = body.email
+    data.phone = body.phone
+    data.address = body.address
+
+    return GetCustomerResponse(
+        data=CustomerSchema(
+            id=data.id,
+            name=data.name,
+            email=data.email,
+            phone=data.phone,
+            address=data.address,
+        )
+    )
+
+
+@customer_router.delete("/{customer_id}")
+async def delete(
+    customer_id: str,
+    logger: Logger = Depends(get_request_logger),
+    main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
+) -> GetCustomerResponse:
+    logger.debug(RequestLog(input={"customer_id": customer_id}))
+
+    data = main_database_session.get(Customer, customer_id)
+    if not data:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            message="Customer not found",
+            detail=f"Customer not found with id: {customer_id}",
+        )
+
+    main_database_session.delete(data)
+
+    return GetCustomerResponse(
+        data=CustomerSchema(
+            id=data.id,
+            name=data.name,
+            email=data.email,
+            phone=data.phone,
+            address=data.address,
+        )
+    )
