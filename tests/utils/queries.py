@@ -2,7 +2,9 @@ from sqlalchemy import text
 from sqlmodel import Session
 
 
-def execute_raw_queries(session: Session, *queries: str) -> None:
+def execute_raw_queries(session: Session, *queries: str) -> tuple:
+    results = []
     for query in queries:
         # noinspection PyTypeChecker
-        session.exec(text(query))
+        results.append(session.exec(text(query)))
+    return tuple(results)
