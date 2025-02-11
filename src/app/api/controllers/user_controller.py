@@ -5,32 +5,34 @@ from sqlalchemy import func, Select
 from sqlmodel import select, Session
 
 from app.api.schema.customer_schema import (
-    CustomerSchema,
-    GetAllCustomersResponse,
-    GetCustomerResponse,
-    CreateCustomerRequest,
+    UserSchema,
+    GetAllUsersResponse,
+    GetUserResponse,
+    CreateUserRequest,
+    UpdateUserRequest,
 )
 from app.api.schema.shared.base import CountMeta
 from app.api.schema.shared.errors import ApiError
 from app.api.schema.shared.filtering import FilteringParams, get_filtering
 from app.api.schema.shared.pagination import PaginationParams, get_pagination
 from app.api.schema.shared.sorting import get_sorting, SortingParams
-from app.core.models.main.customer import Customer
+from app.core.models.main.user import User
 from system.database.session import DatabaseSession
 from system.database.settings import DatabaseId
 from system.logging.api_logger import get_request_logger, RequestLog
+import nacl.pwhash
 
-customer_router = APIRouter(prefix="/customers")
+user_router = APIRouter(prefix="/users")
 
 
-@customer_router.get("")
+@user_router.get("")
 async def get_all(
     logger: Logger = Depends(get_request_logger),
     main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
     filtering: FilteringParams = Depends(get_filtering),
     sorting: SortingParams = Depends(get_sorting),
     pagination: PaginationParams = Depends(get_pagination(100, 300)),
-) -> GetAllCustomersResponse:
+) -> GetAllUsersResponse:
     logger.debug(
         RequestLog(
             input={
@@ -42,8 +44,8 @@ async def get_all(
     )
 
     data = main_database_session.exec(
-        CustomerSchema.build_query(
-            select(Customer),
+        UserSchema.build_query(
+            select(User),
             pagination.skip,
             pagination.limit,
             filtering.where,
@@ -52,15 +54,15 @@ async def get_all(
     ).all()
 
     count = main_database_session.exec(
-        CustomerSchema.build_query(
-            select(func.count(Customer.id)),
+        UserSchema.build_query(
+            select(func.count(User.id)),
             where=filtering.where,
         )
     ).one()
 
-    return GetAllCustomersResponse(
+    return GetAllUsersResponse(
         data=[
-            CustomerSchema(
+            UserSchema(
                 id=d.id,
                 name=d.name,
                 email=d.email,
@@ -75,24 +77,24 @@ async def get_all(
     )
 
 
-@customer_router.get("/{customer_id}")
+@user_router.get("/{user_id}")
 async def get(
-    customer_id: str,
+    user_id: str,
     logger: Logger = Depends(get_request_logger),
     main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
-) -> GetCustomerResponse:
-    logger.debug(RequestLog(input={"customer_id": customer_id}))
+) -> GetUserResponse:
+    logger.debug(RequestLog(input={"user_id": user_id}))
 
-    data = main_database_session.get(Customer, customer_id)
+    data = main_database_session.get(User, user_id)
     if not data:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            message="Customer not found",
-            detail=f"Customer not found with id: {customer_id}",
+            message="User not found",
+            detail=f"User not found with id: {user_id}",
         )
 
-    return GetCustomerResponse(
-        data=CustomerSchema(
+    return GetUserResponse(
+        data=UserSchema(
             id=data.id,
             name=data.name,
             email=data.email,
@@ -102,33 +104,34 @@ async def get(
     )
 
 
-@customer_router.post("", status_code=status.HTTP_201_CREATED)
+@user_router.post("", status_code=status.HTTP_201_CREATED)
 async def create(
-    body: CreateCustomerRequest,
+    body: CreateUserRequest,
     logger: Logger = Depends(get_request_logger),
     main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
-) -> GetCustomerResponse:
+) -> GetUserResponse:
     logger.debug(RequestLog(input={"body": body}))
 
-    data_query: Select = select(Customer).where(Customer.email == body.email)
+    data_query: Select = select(User).where(User.email == body.email)
     data = main_database_session.exec(data_query).first()
     if data:
         raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            message="Customer already exists",
-            detail=f"Customer already exists with email: {body.email}",
+            message="User already exists",
+            detail=f"User already exists with email: {body.email}",
         )
 
-    data = Customer(
+    data = User(
         name=body.name,
         email=body.email,
         phone=body.phone,
         address=body.address,
+        password_hash=nacl.pwhash.str(body.password.encode()).decode(),
     )
     main_database_session.add(data)
 
-    return GetCustomerResponse(
-        data=CustomerSchema(
+    return GetUserResponse(
+        data=UserSchema(
             id=data.id,
             name=data.name,
             email=data.email,
@@ -138,41 +141,29 @@ async def create(
     )
 
 
-@customer_router.put("/{customer_id}")
+@user_router.put("/{user_id}")
 async def update(
-    customer_id: str,
-    body: CreateCustomerRequest,
+    user_id: str,
+    body: UpdateUserRequest,
     logger: Logger = Depends(get_request_logger),
     main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
-) -> GetCustomerResponse:
-    logger.debug(RequestLog(input={"customer_id": customer_id, "body": body}))
+) -> GetUserResponse:
+    logger.debug(RequestLog(input={"user_id": user_id, "body": body}))
 
-    data_query: Select = select(Customer).where(
-        Customer.id != customer_id, Customer.email == body.email
-    )
-    data = main_database_session.exec(data_query).first()
-    if data:
-        raise ApiError(
-            status_code=status.HTTP_409_CONFLICT,
-            message="Customer already exists",
-            detail=f"Customer already exists with email: {body.email}",
-        )
-
-    data = main_database_session.get(Customer, customer_id)
+    data = main_database_session.get(User, user_id)
     if not data:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            message="Customer not found",
-            detail=f"Customer not found with id: {customer_id}",
+            message="User not found",
+            detail=f"User not found with id: {user_id}",
         )
 
     data.name = body.name
-    data.email = body.email
     data.phone = body.phone
     data.address = body.address
 
-    return GetCustomerResponse(
-        data=CustomerSchema(
+    return GetUserResponse(
+        data=UserSchema(
             id=data.id,
             name=data.name,
             email=data.email,
@@ -182,26 +173,26 @@ async def update(
     )
 
 
-@customer_router.delete("/{customer_id}")
+@user_router.delete("/{user_id}")
 async def delete(
-    customer_id: str,
+    user_id: str,
     logger: Logger = Depends(get_request_logger),
     main_database_session: Session = Depends(DatabaseSession(DatabaseId.MAIN)),
-) -> GetCustomerResponse:
-    logger.debug(RequestLog(input={"customer_id": customer_id}))
+) -> GetUserResponse:
+    logger.debug(RequestLog(input={"user_id": user_id}))
 
-    data = main_database_session.get(Customer, customer_id)
+    data = main_database_session.get(User, user_id)
     if not data:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            message="Customer not found",
-            detail=f"Customer not found with id: {customer_id}",
+            message="User not found",
+            detail=f"User not found with id: {user_id}",
         )
 
     main_database_session.delete(data)
 
-    return GetCustomerResponse(
-        data=CustomerSchema(
+    return GetUserResponse(
+        data=UserSchema(
             id=data.id,
             name=data.name,
             email=data.email,

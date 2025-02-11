@@ -8,6 +8,7 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
+from system.authentication.settings import AuthSettings
 from system.database.settings import DatabaseSettings, DatabaseId
 from system.datetime.settings import DatetimeSettings
 from system.logging.settings import LoggingSettings
@@ -45,6 +46,7 @@ class Settings(BaseSettings):
     logging: LoggingSettings
     datetime: DatetimeSettings
     databases: dict[DatabaseId, DatabaseSettings]
+    auth: AuthSettings
 
 
 @lru_cache

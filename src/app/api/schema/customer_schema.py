@@ -1,10 +1,10 @@
 from app.api.schema.shared.base import CountMeta, BaseSchema
 from app.api.schema.shared.entities import BaseEntitySchema
-from app.core.models.main.customer import Customer
+from app.core.models.main.user import User
 from system.query_builder import Field
 
 
-class CustomerSchema(BaseEntitySchema):
+class UserSchema(BaseEntitySchema):
     name: str
     email: str
     phone: str
@@ -13,23 +13,27 @@ class CustomerSchema(BaseEntitySchema):
     @staticmethod
     def get_query_builder_fields() -> list[Field]:
         return [
-            Field("id", Customer.id),
-            Field("email", Customer.email),
-            Field("name", Customer.name),
+            Field("id", User.id),
+            Field("email", User.email),
+            Field("name", User.name),
         ]
 
 
-class GetAllCustomersResponse(BaseSchema):
-    data: list[CustomerSchema]
+class GetAllUsersResponse(BaseSchema):
+    data: list[UserSchema]
     meta: CountMeta
 
 
-class GetCustomerResponse(BaseSchema):
-    data: CustomerSchema
+class GetUserResponse(BaseSchema):
+    data: UserSchema
 
 
-class CreateCustomerRequest(BaseSchema):
+class UpdateUserRequest(BaseSchema):
     name: str
-    email: str
     phone: str
     address: str
+
+
+class CreateUserRequest(UpdateUserRequest):
+    email: str
+    password: str

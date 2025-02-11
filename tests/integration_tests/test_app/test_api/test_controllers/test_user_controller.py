@@ -2,21 +2,22 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from app.core.models.main.customer import Customer
+from app.core.models.main.user import User
 from system.database.session import DatabaseSession
 from system.database.settings import DatabaseId
 from utils.assertions import assert_api_error_format
 from utils.queries import execute_raw_queries
 from utils.uuids import mock_uuid
+import nacl.pwhash
 
 
 class TestGetAll:
-    ENDPOINT = "/api/v4/customers"
+    ENDPOINT = "/api/v4/users"
 
     @pytest.fixture(scope="function", autouse=True)
     def reset_data(self):
         with DatabaseSession.get(DatabaseId.MAIN) as session:
-            _ = execute_raw_queries(session, "TRUNCATE TABLE main.customer CASCADE")
+            _ = execute_raw_queries(session, "TRUNCATE TABLE main.user CASCADE")
             session.commit()
 
     def test_ok(self, client: TestClient):
@@ -24,9 +25,9 @@ class TestGetAll:
         with DatabaseSession.get(DatabaseId.MAIN) as session:
             _ = execute_raw_queries(
                 session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                    VALUES ('{mock_uuid(1)}', 'test_customer', 'test_email', 'test_phone', 'test_address'),
-                           ('{mock_uuid(2)}', 'test_customer2', 'test_email2', 'test_phone2', 'test_address2')""",
+                f"""INSERT INTO main.user (id, name, email, phone, address) 
+                    VALUES ('{mock_uuid(1)}', 'test_user', 'test_email', 'test_phone', 'test_address'),
+                           ('{mock_uuid(2)}', 'test_user2', 'test_email2', 'test_phone2', 'test_address2')""",
             )
             session.commit()
 
@@ -39,14 +40,14 @@ class TestGetAll:
             "data": [
                 {
                     "id": mock_uuid(1),
-                    "name": "test_customer",
+                    "name": "test_user",
                     "email": "test_email",
                     "phone": "test_phone",
                     "address": "test_address",
                 },
                 {
                     "id": mock_uuid(2),
-                    "name": "test_customer2",
+                    "name": "test_user2",
                     "email": "test_email2",
                     "phone": "test_phone2",
                     "address": "test_address2",
@@ -69,12 +70,12 @@ class TestGetAll:
 
 
 class TestGet:
-    ENDPOINT = "/api/v4/customers/{customer_id}"
+    ENDPOINT = "/api/v4/users/{user_id}"
 
     @pytest.fixture(scope="function", autouse=True)
     def reset_data(self):
         with DatabaseSession.get(DatabaseId.MAIN) as session:
-            _ = execute_raw_queries(session, "TRUNCATE TABLE main.customer CASCADE")
+            _ = execute_raw_queries(session, "TRUNCATE TABLE main.user CASCADE")
             session.commit()
 
     def test_ok(self, client: TestClient):
@@ -82,21 +83,21 @@ class TestGet:
         with DatabaseSession.get(DatabaseId.MAIN) as session:
             _ = execute_raw_queries(
                 session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                            VALUES ('{mock_uuid(1)}', 'test_customer', 'test_email', 'test_phone', 'test_address'),
-                                   ('{mock_uuid(2)}', 'test_customer2', 'test_email2', 'test_phone2', 'test_address2')""",
+                f"""INSERT INTO main.user (id, name, email, phone, address) 
+                            VALUES ('{mock_uuid(1)}', 'test_user', 'test_email', 'test_phone', 'test_address'),
+                                   ('{mock_uuid(2)}', 'test_user2', 'test_email2', 'test_phone2', 'test_address2')""",
             )
             session.commit()
 
         # Act
-        response = client.get(self.ENDPOINT.format(customer_id=mock_uuid(1)))
+        response = client.get(self.ENDPOINT.format(user_id=mock_uuid(1)))
 
         # Assert
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
             "data": {
                 "id": mock_uuid(1),
-                "name": "test_customer",
+                "name": "test_user",
                 "email": "test_email",
                 "phone": "test_phone",
                 "address": "test_address",
@@ -108,14 +109,14 @@ class TestGet:
         with DatabaseSession.get(DatabaseId.MAIN) as session:
             _ = execute_raw_queries(
                 session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                            VALUES ('{mock_uuid(1)}', 'test_customer', 'test_email', 'test_phone', 'test_address'),
-                                   ('{mock_uuid(2)}', 'test_customer2', 'test_email2', 'test_phone2', 'test_address2')""",
+                f"""INSERT INTO main.user (id, name, email, phone, address) 
+                            VALUES ('{mock_uuid(1)}', 'test_user', 'test_email', 'test_phone', 'test_address'),
+                                   ('{mock_uuid(2)}', 'test_user2', 'test_email2', 'test_phone2', 'test_address2')""",
             )
             session.commit()
 
         # Act
-        response = client.get(self.ENDPOINT.format(customer_id=mock_uuid(3)))
+        response = client.get(self.ENDPOINT.format(user_id=mock_uuid(3)))
 
         # Assert
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -123,21 +124,22 @@ class TestGet:
 
 
 class TestCreate:
-    ENDPOINT = "/api/v4/customers"
+    ENDPOINT = "/api/v4/users"
 
     @pytest.fixture(scope="function", autouse=True)
     def reset_data(self):
         with DatabaseSession.get(DatabaseId.MAIN) as session:
-            _ = execute_raw_queries(session, "TRUNCATE TABLE main.customer CASCADE")
+            _ = execute_raw_queries(session, "TRUNCATE TABLE main.user CASCADE")
             session.commit()
 
     def test_created(self, client: TestClient):
         # Arrange
         data = {
-            "name": "test_customer",
+            "name": "test_user",
             "email": "test_email",
             "phone": "test_phone",
             "address": "test_address",
+            "password": "test_password",
         }
 
         # Act
@@ -149,18 +151,19 @@ class TestCreate:
         assert "id" in response.json()["data"]
 
         with DatabaseSession.get(DatabaseId.MAIN) as session:
-            data = session.get(Customer, response.json()["data"]["id"])
+            data = session.get(User, response.json()["data"]["id"])
 
         assert str(data.id) == response.json()["data"]["id"]
-        assert data.name == "test_customer"
+        assert data.name == "test_user"
         assert data.email == "test_email"
         assert data.phone == "test_phone"
         assert data.address == "test_address"
+        assert nacl.pwhash.verify(data.password_hash.encode(), "test_password".encode())
 
     def test_missing_data(self, client: TestClient):
         # Arrange
         data = {
-            "name": "test_customer",
+            "name": "test_user",
             "email": "test_email",
             "phone": "test_phone",
         }
@@ -177,16 +180,17 @@ class TestCreate:
         with DatabaseSession.get(DatabaseId.MAIN) as session:
             _ = execute_raw_queries(
                 session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                            VALUES ('{mock_uuid(1)}', 'test_customer', 'test_exisiting_email', 'test_phone', 'test_address')""",
+                f"""INSERT INTO main.user (id, name, email, phone, address) 
+                            VALUES ('{mock_uuid(1)}', 'test_user', 'test_exisiting_email', 'test_phone', 'test_address')""",
             )
             session.commit()
 
         data = {
-            "name": "test_customer",
+            "name": "test_user",
             "email": "test_exisiting_email",
             "phone": "test_phone",
             "address": "test_address",
+            "password": "test_password",
         }
 
         # Act
@@ -198,12 +202,12 @@ class TestCreate:
 
 
 class TestUpdate:
-    ENDPOINT = "/api/v4/customers/{customer_id}"
+    ENDPOINT = "/api/v4/users/{user_id}"
 
     @pytest.fixture(scope="function", autouse=True)
     def reset_data(self):
         with DatabaseSession.get(DatabaseId.MAIN) as session:
-            _ = execute_raw_queries(session, "TRUNCATE TABLE main.customer CASCADE")
+            _ = execute_raw_queries(session, "TRUNCATE TABLE main.user CASCADE")
             session.commit()
 
     def test_ok(self, client: TestClient):
@@ -211,21 +215,20 @@ class TestUpdate:
         with DatabaseSession.get(DatabaseId.MAIN) as session:
             _ = execute_raw_queries(
                 session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                            VALUES ('{mock_uuid(1)}', 'test_customer', 'test_email', 'test_phone', 'test_address'),
-                                   ('{mock_uuid(2)}', 'test_customer2', 'test_email2', 'test_phone2', 'test_address2')""",
+                f"""INSERT INTO main.user (id, name, email, phone, address) 
+                            VALUES ('{mock_uuid(1)}', 'test_user', 'test_email', 'test_phone', 'test_address'),
+                                   ('{mock_uuid(2)}', 'test_user2', 'test_email2', 'test_phone2', 'test_address2')""",
             )
             session.commit()
 
         data = {
-            "name": "test_customer_updated",
-            "email": "test_email_updated",
+            "name": "test_user_updated",
             "phone": "test_phone_updated",
             "address": "test_address_updated",
         }
 
         # Act
-        response = client.put(self.ENDPOINT.format(customer_id=mock_uuid(1)), json=data)
+        response = client.put(self.ENDPOINT.format(user_id=mock_uuid(1)), json=data)
 
         # Assert
         assert response.status_code == status.HTTP_200_OK
@@ -233,11 +236,11 @@ class TestUpdate:
         assert "id" in response.json()["data"]
 
         with DatabaseSession.get(DatabaseId.MAIN) as session:
-            data = session.get(Customer, mock_uuid(1))
+            data = session.get(User, mock_uuid(1))
 
         assert str(data.id) == response.json()["data"]["id"]
-        assert data.name == "test_customer_updated"
-        assert data.email == "test_email_updated"
+        assert data.name == "test_user_updated"
+        assert data.email == "test_email"
         assert data.phone == "test_phone_updated"
         assert data.address == "test_address_updated"
 
@@ -246,21 +249,20 @@ class TestUpdate:
         with DatabaseSession.get(DatabaseId.MAIN) as session:
             _ = execute_raw_queries(
                 session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                            VALUES ('{mock_uuid(1)}', 'test_customer', 'test_email', 'test_phone', 'test_address'),
-                                   ('{mock_uuid(2)}', 'test_customer2', 'test_email2', 'test_phone2', 'test_address2')""",
+                f"""INSERT INTO main.user (id, name, email, phone, address) 
+                            VALUES ('{mock_uuid(1)}', 'test_user', 'test_email', 'test_phone', 'test_address'),
+                                   ('{mock_uuid(2)}', 'test_user2', 'test_email2', 'test_phone2', 'test_address2')""",
             )
             session.commit()
 
         data = {
-            "name": "test_customer_updated",
-            "email": "test_email_updated",
+            "name": "test_user_updated",
             "phone": "test_phone_updated",
             "address": "test_address_updated",
         }
 
         # Act
-        response = client.put(self.ENDPOINT.format(customer_id=mock_uuid(3)), json=data)
+        response = client.put(self.ENDPOINT.format(user_id=mock_uuid(3)), json=data)
 
         # Assert
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -269,51 +271,26 @@ class TestUpdate:
     def test_missing_data(self, client: TestClient):
         # Arrange
         data = {
-            "name": "test_customer",
+            "name": "test_user",
             "email": "test_email",
             "phone": "test_phone",
         }
 
         # Act
-        response = client.put(self.ENDPOINT.format(customer_id=mock_uuid(1)), json=data)
+        response = client.put(self.ENDPOINT.format(user_id=mock_uuid(1)), json=data)
 
         # Assert
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         assert_api_error_format(response)
 
-    def test_email_conflict(self, client: TestClient):
-        # Arrange
-        with DatabaseSession.get(DatabaseId.MAIN) as session:
-            _ = execute_raw_queries(
-                session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                            VALUES ('{mock_uuid(1)}', 'test_customer', 'test_exisiting_email', 'test_phone', 'test_address'),
-                                   ('{mock_uuid(2)}', 'test_customer2', 'test_email2', 'test_phone2', 'test_address2')""",
-            )
-            session.commit()
-
-        data = {
-            "name": "test_customer2",
-            "email": "test_exisiting_email",
-            "phone": "test_phone2",
-            "address": "test_address2",
-        }
-
-        # Act
-        response = client.put(self.ENDPOINT.format(customer_id=mock_uuid(2)), json=data)
-
-        # Assert
-        assert response.status_code == status.HTTP_409_CONFLICT
-        assert_api_error_format(response)
-
 
 class TestDelete:
-    ENDPOINT = "/api/v4/customers/{customer_id}"
+    ENDPOINT = "/api/v4/users/{user_id}"
 
     @pytest.fixture(scope="function", autouse=True)
     def reset_data(self):
         with DatabaseSession.get(DatabaseId.MAIN) as session:
-            _ = execute_raw_queries(session, "TRUNCATE TABLE main.customer CASCADE")
+            _ = execute_raw_queries(session, "TRUNCATE TABLE main.user CASCADE")
             session.commit()
 
     def test_ok(self, client: TestClient):
@@ -321,14 +298,14 @@ class TestDelete:
         with DatabaseSession.get(DatabaseId.MAIN) as session:
             _ = execute_raw_queries(
                 session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                            VALUES ('{mock_uuid(1)}', 'test_customer', 'test_email', 'test_phone', 'test_address'),
-                                   ('{mock_uuid(2)}', 'test_customer2', 'test_email2', 'test_phone2', 'test_address2')""",
+                f"""INSERT INTO main.user (id, name, email, phone, address) 
+                            VALUES ('{mock_uuid(1)}', 'test_user', 'test_email', 'test_phone', 'test_address'),
+                                   ('{mock_uuid(2)}', 'test_user2', 'test_email2', 'test_phone2', 'test_address2')""",
             )
             session.commit()
 
         # Act
-        response = client.delete(self.ENDPOINT.format(customer_id=mock_uuid(1)))
+        response = client.delete(self.ENDPOINT.format(user_id=mock_uuid(1)))
 
         # Assert
         assert response.status_code == status.HTTP_200_OK
@@ -336,7 +313,7 @@ class TestDelete:
         assert "id" in response.json()["data"]
 
         with DatabaseSession.get(DatabaseId.MAIN) as session:
-            data = session.get(Customer, mock_uuid(1))
+            data = session.get(User, mock_uuid(1))
 
         assert data is None
 
@@ -345,14 +322,14 @@ class TestDelete:
         with DatabaseSession.get(DatabaseId.MAIN) as session:
             _ = execute_raw_queries(
                 session,
-                f"""INSERT INTO main.customer (id, name, email, phone, address) 
-                            VALUES ('{mock_uuid(1)}', 'test_customer', 'test_email', 'test_phone', 'test_address'),
-                                   ('{mock_uuid(2)}', 'test_customer2', 'test_email2', 'test_phone2', 'test_address2')""",
+                f"""INSERT INTO main.user (id, name, email, phone, address) 
+                            VALUES ('{mock_uuid(1)}', 'test_user', 'test_email', 'test_phone', 'test_address'),
+                                   ('{mock_uuid(2)}', 'test_user2', 'test_email2', 'test_phone2', 'test_address2')""",
             )
             session.commit()
 
         # Act
-        response = client.delete(self.ENDPOINT.format(customer_id=mock_uuid(3)))
+        response = client.delete(self.ENDPOINT.format(user_id=mock_uuid(3)))
 
         # Assert
         assert response.status_code == status.HTTP_404_NOT_FOUND

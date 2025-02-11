@@ -11,6 +11,7 @@ pydantic-settings[yaml]~=2.7.1
 pydantic~=2.10.6
 pyjwt~=2.10.1
 pylint~=3.3.4
+pynacl~=1.5.0
 pytest-asyncio~=0.25.3
 pytest-freezegun~=0.4.2
 pytest~=8.3.4
